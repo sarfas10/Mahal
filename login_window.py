@@ -10,8 +10,9 @@ from signup_window import SignupWindow
 
 
 class LoginWindow(QWidget):
-    def __init__(self):
+    def __init__(self, stack):
         super().__init__()
+        self.stack = stack
         self.setWindowTitle("Login")
         self.setStyleSheet("font-family: 'Segoe UI'; font-size: 15px; background-color: white;")
         self.init_ui()
@@ -156,6 +157,4 @@ class LoginWindow(QWidget):
             QMessageBox.critical(self, "Error", str(e))
 
     def open_signup(self):
-        self.signup_window = SignupWindow()
-        self.signup_window.show()
-        self.close()
+        self.stack.setCurrentIndex(1)

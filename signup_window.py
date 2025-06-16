@@ -10,8 +10,9 @@ from firebase_api import firebase_register
 
 
 class SignupWindow(QWidget):
-    def __init__(self):
+    def __init__(self, stack):
         super().__init__()
+        self.stack = stack
         self.setWindowTitle("Signup")
         self.setStyleSheet("font-family: 'Segoe UI'; font-size: 15px; background-color: white;")
         self.init_ui()
@@ -157,7 +158,4 @@ class SignupWindow(QWidget):
             QMessageBox.critical(self, "Registration Failed", str(e))
 
     def back_to_login(self):
-        from login_window import LoginWindow
-        self.login_window = LoginWindow()
-        self.login_window.show()
-        self.close()
+        self.stack.setCurrentIndex(0)
