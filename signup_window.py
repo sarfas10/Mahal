@@ -28,7 +28,7 @@ class SignupWindow(QWidget):
         left_widget.setMinimumWidth(600)
 
         image = QLabel()
-        pixmap = QPixmap("skeleton.png")
+        pixmap = QPixmap("logo.png")
         image.setPixmap(pixmap.scaledToWidth(300, Qt.SmoothTransformation))
         image.setAlignment(Qt.AlignCenter)
 
