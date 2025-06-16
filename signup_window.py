@@ -81,6 +81,11 @@ class SignupWindow(QWidget):
             }
         """
 
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Full Name")
+        self.name_input.setFixedHeight(40)
+        self.name_input.setStyleSheet(input_style)
+
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("Email")
         self.email_input.setFixedHeight(40)
@@ -122,6 +127,7 @@ class SignupWindow(QWidget):
         back_layout.addStretch()
 
         form_layout.addWidget(title_label)
+        form_layout.addWidget(self.name_input)
         form_layout.addWidget(self.email_input)
         form_layout.addWidget(self.password_input)
         form_layout.addWidget(self.confirm_input)
@@ -137,11 +143,12 @@ class SignupWindow(QWidget):
 
     def handle_signup(self):
         from login_window import LoginWindow
+        name = self.name_input.text()
         email = self.email_input.text()
         password = self.password_input.text()
         confirm = self.confirm_input.text()
 
-        if not email or not password or not confirm:
+        if not email or not password or not confirm or not name:
             QMessageBox.warning(self, "Input Error", "All fields are required.")
             return
         if password != confirm:
@@ -149,11 +156,9 @@ class SignupWindow(QWidget):
             return
 
         try:
-            firebase_register(email, password)
+            firebase_register(email, password, name)
             QMessageBox.information(self, "Success", "Registration successful!")
-            self.login_window = LoginWindow()
-            self.login_window.show()
-            self.close()
+            self.stack.setCurrentIndex(0)
         except Exception as e:
             QMessageBox.critical(self, "Registration Failed", str(e))
 
