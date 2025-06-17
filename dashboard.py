@@ -7,6 +7,8 @@ from PyQt5.QtGui import QPixmap
 import sys
 import requests
 from services.rss_fetcher import fetch_islamic_rss
+from services.hijri_calendar import HijriCalendarWidget
+
 
 
 class Dashboard(QWidget):
@@ -46,12 +48,17 @@ class Dashboard(QWidget):
         center_layout.setSpacing(0)
         center_widget.setStyleSheet("background-color: #F4F4F4;")
 
-        # TOP PANEL (Dashboard Stats)
+        # Top Central Panel: Split Horizontally
         central_top = QWidget()
-        central_top_layout = QGridLayout(central_top)
+        central_top_layout = QHBoxLayout(central_top)
         central_top_layout.setContentsMargins(10, 10, 10, 10)
         central_top_layout.setSpacing(15)
         central_top.setStyleSheet("background-color: #F8F9FA;")
+
+        # Left - Stats
+        stats_widget = QWidget()
+        stats_layout = QGridLayout(stats_widget)
+        stats_layout.setSpacing(15)
 
         stats = [
             ("📊 Total Sales", "$1k", "#FFE3E3"),
@@ -64,12 +71,8 @@ class Dashboard(QWidget):
 
         for i, (label, value, bg_color) in enumerate(stats):
             card = QWidget()
-
             card.setFixedSize(210, 150)
-            card.setStyleSheet(f"""
-                background-color: {bg_color};
-                border-radius: 18px;
-            """)
+            card.setStyleSheet(f"background-color: {bg_color}; border-radius: 18px;")
 
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(15, 10, 15, 10)
@@ -77,7 +80,6 @@ class Dashboard(QWidget):
 
             icon_label = QLabel(label.split()[0])
             icon_label.setStyleSheet("font-size: 24px;")
-            icon_label.setAlignment(Qt.AlignLeft)
             card_layout.addWidget(icon_label)
 
             value_label = QLabel(value)
@@ -89,9 +91,21 @@ class Dashboard(QWidget):
             card_layout.addWidget(subtitle_label)
 
             card_layout.addStretch()
-            row = i // 3
-            col = i % 3
-            central_top_layout.addWidget(card, row, col)
+            stats_layout.addWidget(card, i // 3, i % 3)
+
+        # Right - Islamic Calendar (Placeholder)
+        calendar_widget = QWidget()
+        calender_layout = QVBoxLayout(calendar_widget)
+        calender_layout.setContentsMargins(10, 10, 10, 10)
+        calender_layout.setSpacing(10)
+        calendar_widget.setStyleSheet("background-color: #E6F0FF;")
+
+        # Add Hijri calendar widget
+        calendar = HijriCalendarWidget()
+        calender_layout.addWidget(calendar)
+
+        central_top_layout.addWidget(stats_widget, stretch=3)
+        central_top_layout.addWidget(calendar_widget, stretch=1)
 
         # BOTTOM PANEL (News)
         self.central_bottom_container = QScrollArea()
