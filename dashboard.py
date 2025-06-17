@@ -1,17 +1,13 @@
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QStackedWidget
+    QScrollArea, QStackedWidget, QGridLayout
 )
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
-from PyQt5.QtCore import QByteArray, QUrl
-import requests
-from io import BytesIO
-
-
-from services.rss_fetcher import fetch_islamic_rss
-import sys
 from PyQt5.QtGui import QPixmap
+import sys
+import requests
+from services.rss_fetcher import fetch_islamic_rss
+
 
 class Dashboard(QWidget):
     def __init__(self, stack):
@@ -23,10 +19,10 @@ class Dashboard(QWidget):
         self.init_ui()
         QTimer.singleShot(0, self.showMaximized)
 
-        # Auto-refresh every 5 minutes
+        # Auto-refresh news every 5 minutes
         self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self.load_news)
-        self.refresh_timer.start(300000)  # 5 minutes
+        self.refresh_timer.start(300000)
 
     def init_ui(self):
         self.content_widget = QWidget()
@@ -50,15 +46,54 @@ class Dashboard(QWidget):
         center_layout.setSpacing(0)
         center_widget.setStyleSheet("background-color: #F4F4F4;")
 
-        # Top Half
+        # TOP PANEL (Dashboard Stats)
         central_top = QWidget()
-        central_top_layout = QVBoxLayout(central_top)
+        central_top_layout = QGridLayout(central_top)
         central_top_layout.setContentsMargins(10, 10, 10, 10)
-        central_top_layout.setSpacing(10)
-        central_top.setStyleSheet("background-color: #DFFFD6;")
-        central_top_layout.addWidget(QLabel("Central Top"))
+        central_top_layout.setSpacing(15)
+        central_top.setStyleSheet("background-color: #F8F9FA;")
 
-        # Bottom Half (News)
+        stats = [
+            ("📊 Total Sales", "$1k", "#FFE3E3"),
+            ("📄 Total Order", "300", "#FFF6DA"),
+            ("👨‍👩‍👧 Total Families", "235", "#E4F7D2"),
+            ("🧍 Members", "1294", "#D6F0FF"),
+            ("📅 Events", "4", "#F4E1FF"),
+            ("📄 Requests", "12", "#FFEBDA"),
+        ]
+
+        for i, (label, value, bg_color) in enumerate(stats):
+            card = QWidget()
+
+            card.setFixedSize(210, 150)
+            card.setStyleSheet(f"""
+                background-color: {bg_color};
+                border-radius: 18px;
+            """)
+
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(15, 10, 15, 10)
+            card_layout.setSpacing(5)
+
+            icon_label = QLabel(label.split()[0])
+            icon_label.setStyleSheet("font-size: 24px;")
+            icon_label.setAlignment(Qt.AlignLeft)
+            card_layout.addWidget(icon_label)
+
+            value_label = QLabel(value)
+            value_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #1F1F1F;")
+            card_layout.addWidget(value_label)
+
+            subtitle_label = QLabel(" ".join(label.split()[1:]))
+            subtitle_label.setStyleSheet("font-size: 13px; color: #5C5C5C;")
+            card_layout.addWidget(subtitle_label)
+
+            card_layout.addStretch()
+            row = i // 3
+            col = i % 3
+            central_top_layout.addWidget(card, row, col)
+
+        # BOTTOM PANEL (News)
         self.central_bottom_container = QScrollArea()
         self.central_bottom_container.setWidgetResizable(True)
         self.central_bottom_container.setStyleSheet("""
@@ -102,7 +137,7 @@ class Dashboard(QWidget):
         right_layout.addWidget(QLabel("Right Panel"))
         content_layout.addWidget(right_widget, stretch=2)
 
-        # Main layout
+        # Main Scroll Area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -116,13 +151,11 @@ class Dashboard(QWidget):
         self.load_news()
 
     def load_news(self):
-    # Clear previous content
         for i in reversed(range(self.central_bottom_layout.count())):
             widget = self.central_bottom_layout.itemAt(i).widget()
             if widget is not None and widget != self.news_heading:
                 widget.setParent(None)
 
-    # Add heading again
         self.central_bottom_layout.addWidget(self.news_heading)
 
         news_articles = fetch_islamic_rss()
@@ -138,7 +171,6 @@ class Dashboard(QWidget):
                 article_layout.setSpacing(8)
                 article_layout.setContentsMargins(10, 10, 10, 10)
 
-                # If image is available, show it
                 if image_url:
                     try:
                         response = requests.get(image_url, timeout=5)
@@ -153,10 +185,9 @@ class Dashboard(QWidget):
                     except Exception as e:
                         print(f"Failed to load image: {image_url}\n{e}")
 
-                # News text
                 html = f"""
                     <div style="margin-bottom: 12px;">
-                        <span style="color:#D62828; font-weight:bold;">➤</span>
+                        <span style="color:#D62828; font-weight:bold;">➔</span>
                         <b>{title}</b><br>
                         {description}<br>
                         <a href='{url}' style='color:#0077cc;'>Read more</a>
@@ -172,4 +203,9 @@ class Dashboard(QWidget):
             self.central_bottom_layout.addWidget(QLabel("Failed to load news."))
 
 
-
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    stack = QStackedWidget()
+    dashboard = Dashboard(stack)
+    dashboard.show()
+    sys.exit(app.exec_())

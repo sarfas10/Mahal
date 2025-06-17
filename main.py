@@ -16,7 +16,7 @@ class MainApp(QStackedWidget):
         self.addWidget(self.signup_widget)  # index 1
         self.addWidget(self.dashboard)  # index 2
 
-        self.setCurrentIndex(2)  # Start with login
+        self.setCurrentIndex(2)  # 0 to start with login
         self.setWindowTitle("Mahal Management")
         self.showMaximized()
 
