@@ -2,6 +2,7 @@
 from PyQt5.QtWidgets import QApplication, QStackedWidget
 from login_window import LoginWindow
 from signup_window import SignupWindow
+from dashboard import Dashboard
 import sys
 
 class MainApp(QStackedWidget):
@@ -9,11 +10,13 @@ class MainApp(QStackedWidget):
         super().__init__()
         self.login_widget = LoginWindow(self)
         self.signup_widget = SignupWindow(self)
+        self.dashboard = Dashboard(self)
 
         self.addWidget(self.login_widget)  # index 0
         self.addWidget(self.signup_widget)  # index 1
+        self.addWidget(self.dashboard)  # index 2
 
-        self.setCurrentIndex(0)  # Start with login
+        self.setCurrentIndex(2)  # Start with login
         self.setWindowTitle("Mahal Management")
         self.showMaximized()
 

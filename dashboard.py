@@ -172,9 +172,4 @@ class Dashboard(QWidget):
             self.central_bottom_layout.addWidget(QLabel("Failed to load news."))
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    stack = QStackedWidget()
-    dashboard = Dashboard(stack)
-    dashboard.show()
-    sys.exit(app.exec_())
+
