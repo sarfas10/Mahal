@@ -1,14 +1,14 @@
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QStackedWidget, QGridLayout
+    QScrollArea, QStackedWidget, QGridLayout, QPushButton
 )
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap
 import sys
 import requests
+
 from services.rss_fetcher import fetch_islamic_rss
 from services.hijri_calendar import HijriCalendarWidget
-
 
 
 class Dashboard(QWidget):
@@ -17,7 +17,7 @@ class Dashboard(QWidget):
         self.stack = stack
         self.setWindowTitle("Dashboard")
         self.setMinimumSize(1024, 600)
-        self.setStyleSheet("font-family: 'Segoe UI'; font-size: 15px; background-color: white;")
+        self.setStyleSheet("font-family: 'Segoe UI'; font-size: 15px; background-color: #f4f7fe;")
         self.init_ui()
         QTimer.singleShot(0, self.showMaximized)
 
@@ -26,19 +26,61 @@ class Dashboard(QWidget):
         self.refresh_timer.timeout.connect(self.load_news)
         self.refresh_timer.start(300000)
 
+    def create_nav_button(self, text, icon, is_active=False):
+        btn = QPushButton(f"{icon}  {text}")
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setFixedHeight(45)
+        btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {'#ffffff' if is_active else 'transparent'};
+                color: {'#2d3748' if is_active else '#a0aec0'};
+                border: none;
+                border-radius: 12px;
+                padding-left: 20px;
+                text-align: left;
+                font-weight: 500;
+                font-size: 15px;
+            }}
+            QPushButton:hover {{
+                background-color: #edf2f7;
+                color: #2d3748;
+            }}
+        """)
+        return btn
+
     def init_ui(self):
         self.content_widget = QWidget()
         content_layout = QHBoxLayout(self.content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # LEFT PANEL
+        # LEFT PANEL - Sidebar
         left_widget = QWidget()
+        left_widget.setStyleSheet("background-color: #f4f7fe; border-right: 1px solid #e2e8f0;")
         left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(10, 10, 10, 10)
-        left_layout.setSpacing(10)
-        left_widget.setStyleSheet("background-color: #FFEFE6;")
-        left_layout.addWidget(QLabel("Left Panel"))
+        left_layout.setContentsMargins(20, 30, 20, 20)
+        left_layout.setSpacing(15)
+
+        # App Title
+        title = QLabel("🏛️ Mahal Management")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2d3748; margin-bottom: 20px;")
+        left_layout.addWidget(title)
+
+        # Menu Buttons
+        menu_items = [
+            ("Admin Panel", "🛠️", True),
+            ("Finance Tracking", "💰", False),
+            ("Member Management", "👥", False),
+            ("Asset Management", "📦", False),
+            ("Academics", "🎓", False),
+            ("Certificate Management", "📜", False),
+        ]
+
+        for label, icon, active in menu_items:
+            btn = self.create_nav_button(label, icon, active)
+            left_layout.addWidget(btn)
+
+        left_layout.addStretch()
         content_layout.addWidget(left_widget, stretch=2)
 
         # CENTER PANEL
@@ -55,7 +97,7 @@ class Dashboard(QWidget):
         central_top_layout.setSpacing(15)
         central_top.setStyleSheet("background-color: #F8F9FA;")
 
-        # Left - Stats
+        # Stats
         stats_widget = QWidget()
         stats_layout = QGridLayout(stats_widget)
         stats_layout.setSpacing(15)
@@ -93,26 +135,24 @@ class Dashboard(QWidget):
             card_layout.addStretch()
             stats_layout.addWidget(card, i // 3, i % 3)
 
-        # Right - Islamic Calendar (Placeholder)
+        # Calendar Widget
         calendar_widget = QWidget()
         calender_layout = QVBoxLayout(calendar_widget)
         calender_layout.setContentsMargins(10, 10, 10, 10)
         calender_layout.setSpacing(10)
         calendar_widget.setStyleSheet("background-color: #E6F0FF;")
-
-        # Add Hijri calendar widget
         calendar = HijriCalendarWidget()
         calender_layout.addWidget(calendar)
 
         central_top_layout.addWidget(stats_widget, stretch=3)
         central_top_layout.addWidget(calendar_widget, stretch=1)
 
-        # BOTTOM PANEL (News)
+        # News Panel
         self.central_bottom_container = QScrollArea()
         self.central_bottom_container.setWidgetResizable(True)
         self.central_bottom_container.setStyleSheet("""
             QScrollArea {
-                background-color: #FFFAD6;
+                background-color: #f4f7fe;
                 border: none;
             }
             QScrollBar:vertical {
@@ -129,6 +169,8 @@ class Dashboard(QWidget):
         """)
 
         self.central_bottom = QWidget()
+        self.central_bottom.setStyleSheet("background-color: #f4f7fe;")
+
         self.central_bottom_layout = QVBoxLayout(self.central_bottom)
         self.central_bottom_layout.setContentsMargins(10, 10, 10, 10)
         self.central_bottom_layout.setSpacing(8)
@@ -142,7 +184,7 @@ class Dashboard(QWidget):
         center_layout.addWidget(self.central_bottom_container, stretch=2)
         content_layout.addWidget(center_widget, stretch=6)
 
-        # RIGHT PANEL
+        # RIGHT PANEL (optional placeholder)
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(10, 10, 10, 10)
@@ -151,7 +193,7 @@ class Dashboard(QWidget):
         right_layout.addWidget(QLabel("Right Panel"))
         content_layout.addWidget(right_widget, stretch=2)
 
-        # Main Scroll Area
+        # Main Layout Scroll
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
