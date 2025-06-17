@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QTimer
-from firebase_api import firebase_register
+from services.firebase_api import firebase_register
 
 
 
@@ -28,7 +28,7 @@ class SignupWindow(QWidget):
         left_widget.setMinimumWidth(600)
 
         image = QLabel()
-        pixmap = QPixmap("logo.png")
+        pixmap = QPixmap("Assets/logo.png")
         image.setPixmap(pixmap.scaledToWidth(300, Qt.SmoothTransformation))
         image.setAlignment(Qt.AlignCenter)
 
