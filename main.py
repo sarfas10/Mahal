@@ -4,6 +4,8 @@ from login_window import LoginWindow
 from signup_window import SignupWindow
 from dashboard import Dashboard
 import sys
+from PyQt5.QtWidgets import QToolTip
+from PyQt5.QtGui import QFont
 
 class MainApp(QStackedWidget):
     def __init__(self):
@@ -20,8 +22,11 @@ class MainApp(QStackedWidget):
         self.setWindowTitle("Mahal Management")
         self.showMaximized()
 
+ 
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
     main_app = MainApp()
     sys.exit(app.exec_())

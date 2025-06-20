@@ -2,14 +2,163 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QScrollArea, QStackedWidget, QGridLayout, QPushButton
 )
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5.QtGui import QPixmap, QFont
 import sys
 import requests
 
 from services.rss_fetcher import fetch_islamic_rss
 from services.hijri_calendar_custom import HijriCalendarWidget
 
+
+class ImportantDatesDisplay(QWidget):
+    """Widget to display important dates for the current month"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setStyleSheet("background-color: transparent;")
+        self.init_ui()
+        
+    def init_ui(self):
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(5, 5, 5, 5)
+        self.layout.setSpacing(5)
+        
+        # Title
+        title = QLabel("📅 Important Dates")
+        title.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        title.setStyleSheet("color: #2d3748; margin-bottom: 5px;")
+        self.layout.addWidget(title)
+        
+        # Scroll area for dates
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 3px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+        
+        self.dates_widget = QWidget()
+        self.dates_layout = QVBoxLayout(self.dates_widget)
+        self.dates_layout.setContentsMargins(0, 0, 0, 0)
+        self.dates_layout.setSpacing(3)
+        
+        self.scroll_area.setWidget(self.dates_widget)
+        self.layout.addWidget(self.scroll_area)
+        
+    def update_dates(self, important_dates, month_name):
+        """Update the display with new important dates"""
+        # Clear existing items
+        for i in reversed(range(self.dates_layout.count())):
+            widget = self.dates_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+        
+        if not important_dates:
+            no_events = QLabel("No special events this month")
+            no_events.setStyleSheet("color: #666; font-style: italic; padding: 10px;")
+            no_events.setAlignment(Qt.AlignCenter)
+            self.dates_layout.addWidget(no_events)
+            return
+        
+        # Sort dates by day
+        sorted_dates = sorted(important_dates.items())
+        
+        for day, events in sorted_dates:
+            date_widget = self.create_date_widget(day, events, month_name)
+            self.dates_layout.addWidget(date_widget)
+        
+        # Add stretch to push items to top
+        self.dates_layout.addStretch()
+    
+    def create_date_widget(self, day, events, month_name):
+        """Create a widget for a single date with its events"""
+        widget = QWidget()
+        widget.setStyleSheet("""
+            QWidget {
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 8px;
+                margin: 2px;
+            }
+            QWidget:hover {
+                background-color: rgba(255, 255, 255, 0.9);
+            }
+        """)
+        
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(2)
+        
+        # Date header
+        date_label = QLabel(f"{day} {month_name}")
+        date_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        date_label.setStyleSheet("color: #2d3748;")
+        layout.addWidget(date_label)
+        
+        # Events
+        for event in events:
+            event_label = QLabel(f"• {event}")
+            event_label.setFont(QFont("Segoe UI", 9))
+            
+            # Color code events
+            if any(word in event.lower() for word in ['eid', 'عيد']):
+                color = "#dc3545"  # Red for Eid
+            elif any(word in event.lower() for word in ['ramadan', 'رمضان', 'laylat', 'ليلة']):
+                color = "#20c997"  # Teal for Ramadan/special nights
+            elif any(word in event.lower() for word in ['mawlid', 'مولد']):
+                color = "#0d6efd"  # Blue for Mawlid
+            elif any(word in event.lower() for word in ['ashura', 'عاشوراء']):
+                color = "#6f42c1"  # Purple for Ashura
+            elif any(word in event.lower() for word in ['jummah', 'جمعة', 'friday']):
+                color = "#198754"  # Green for Jummah
+            else:
+                color = "#6c757d"  # Gray for other events
+            
+            event_label.setStyleSheet(f"color: {color}; padding-left: 5px;")
+            event_label.setWordWrap(True)
+            layout.addWidget(event_label)
+        
+        return widget
+
+
+class EnhancedHijriCalendarWidget(HijriCalendarWidget):
+    """Enhanced calendar widget that emits signals when dates change"""
+    dates_updated = pyqtSignal(dict, str)  # important_dates, month_name
+    
+    def __init__(self):
+        super().__init__()
+        
+    def on_important_dates_loaded(self, important_dates):
+        """Override to emit signal when dates are loaded"""
+        super().on_important_dates_loaded(important_dates)
+        # Get current month name
+        from hijridate import Hijri
+        h = Hijri(self.selected_year, self.selected_month, 1)
+        month_name = h.month_name("en")
+        # Emit signal with dates and month name
+        self.dates_updated.emit(important_dates, month_name)
+    
+    def update_calendar(self):
+        """Override to emit signal when calendar updates"""
+        super().update_calendar()
+        # Emit signal even if dates haven't changed
+        from hijridate import Hijri
+        h = Hijri(self.selected_year, self.selected_month, 1)
+        month_name = h.month_name("en")
+        self.dates_updated.emit(self.important_dates, month_name)
 
 
 class Dashboard(QWidget):
@@ -101,11 +250,10 @@ class Dashboard(QWidget):
         stats_main_layout.setSpacing(15)
 
         top_info_widget = QWidget()
-        top_info_widget = QWidget()
         top_info_layout = QHBoxLayout(top_info_widget)
         top_info_layout.setContentsMargins(0, 0, 0, 0)
-        top_info_layout.setSpacing(6)  # Small space between logo and text
-        top_info_layout.setAlignment(Qt.AlignLeft)  # Ensure all items hug the left side
+        top_info_layout.setSpacing(6)
+        top_info_layout.setAlignment(Qt.AlignLeft)
 
         # Logo on the left
         logo_label = QLabel()
@@ -115,7 +263,7 @@ class Dashboard(QWidget):
         logo_label.setFixedSize(100, 100)
         logo_label.setAlignment(Qt.AlignVCenter)
 
-        # Arabic text next to logo (not right-aligned globally)
+        # Arabic text next to logo
         name_label = QLabel("إرشاد الإسلام")
         name_label.setStyleSheet("""
             font-size: 28px;
@@ -125,13 +273,11 @@ class Dashboard(QWidget):
         """)
         name_label.setLayoutDirection(Qt.RightToLeft)
         name_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        name_label.setFixedHeight(100)  # Align with logo
+        name_label.setFixedHeight(100)
         name_label.setContentsMargins(0, 0, 0, 0)
 
-        # Add logo and name to layout (they'll stick to the left together)
         top_info_layout.addWidget(logo_label)
         top_info_layout.addWidget(name_label)
-
 
         bottom_stats_widget = QWidget()
         bottom_stats_layout = QGridLayout(bottom_stats_widget)
@@ -173,42 +319,46 @@ class Dashboard(QWidget):
         stats_main_layout.addWidget(top_info_widget, stretch=1)
         stats_main_layout.addWidget(bottom_stats_widget, stretch=4)
 
- 
-
-# Outer calendar section with blue/light background
+        # Enhanced Calendar Section with Important Dates
         calendar_widget = QWidget()
         calendar_layout = QVBoxLayout(calendar_widget)
         calendar_layout.setContentsMargins(10, 10, 10, 10)
         calendar_layout.setSpacing(0)
-        calendar_widget.setStyleSheet("background-color: #f4f7fe;")  # Or your panel color
+        calendar_widget.setStyleSheet("background-color: #f4f7fe;")
 
-        # Inner white rounded square panel
+        # White panel container for calendar and events
         white_panel = QWidget()
-        white_panel.setFixedSize(350, 380)
+        white_panel.setFixedSize(350, 550)  
         white_panel.setStyleSheet("""
             background-color: white;
             border-radius: 20px;
         """)
 
-        # Calendar inside the white panel
-        calendar = HijriCalendarWidget()
-        calendar.setStyleSheet("background: transparent; border-radius: 16px;")  # Optional
+        # Layout for calendar and events inside white panel
         calendar_layout_inner = QVBoxLayout(white_panel)
         calendar_layout_inner.setContentsMargins(10, 10, 10, 10)
-        calendar_layout_inner.setAlignment(Qt.AlignTop)
-        calendar_layout_inner.addWidget(calendar)
+        calendar_layout_inner.setSpacing(10)
 
-        # Add some space at top of the calendar section
+        # Enhanced Calendar
+        self.calendar = EnhancedHijriCalendarWidget()
+        self.calendar.setStyleSheet("background: transparent; border-radius: 16px;")
+        calendar_layout_inner.addWidget(self.calendar)
+
+        # Important Dates Display
+        self.important_dates_display = ImportantDatesDisplay()
+        calendar_layout_inner.addWidget(self.important_dates_display, stretch=1)
+
+        # Connect calendar to dates display
+        self.calendar.dates_updated.connect(self.important_dates_display.update_dates)
+
+        # Add to calendar widget layout
         calendar_layout.setAlignment(Qt.AlignTop)
         calendar_layout.addSpacing(10)
         calendar_layout.addWidget(white_panel, alignment=Qt.AlignTop)
 
-
-
         # Add to layout with stretch
         central_top_layout.addWidget(stats_widget, stretch=4)
         central_top_layout.addWidget(calendar_widget, stretch=2)
-
 
         # News Section
         self.central_bottom_container = QScrollArea()
@@ -325,6 +475,3 @@ class Dashboard(QWidget):
                 self.central_bottom_layout.addWidget(article_widget)
         else:
             self.central_bottom_layout.addWidget(QLabel("Failed to load news."))
-
-
-
